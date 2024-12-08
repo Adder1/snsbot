@@ -1,0 +1,23 @@
+# 디렉토리와 파일
+node_modules/
+.next/
+out/
+build/
+dist/
+.vscode/
+.idea/
+.DS_Store
+
+# 환경 설정 파일
+.env
+.env.local
+.env.*.local
+
+# 로그 파일
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 시스템 파일
+Thumbs.db
+*.swp

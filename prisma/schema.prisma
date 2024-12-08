@@ -1,0 +1,245 @@
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["native", "windows", "darwin-arm64"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("POSTGRES_URL_NON_POOLING")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// 사용자 정보
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  name          String?
+  nickname      String?   @unique
+  image         String?
+  description   String?   // 자기소개
+  xp            Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  level         Int       @default(1)
+  dailyMissions DailyMission[]
+
+  // 관계 설정
+  accounts      Account[]
+  sessions      Session[]
+  posts         Post[]    // 작성한 글
+  drawings      Drawing[] // 그린 그림
+  comments      Comment[] @relation("UserComments")
+  followers     Follows[] @relation("following")
+  following     Follows[] @relation("follower")
+  likes         Like[]    // 추가
+  achievements  UserAchievement[]
+  notifications Notification[]
+}
+
+// 팔로우 관계
+model Follows {
+  follower    User     @relation("follower", fields: [followerId], references: [id])
+  followerId  String
+  following   User     @relation("following", fields: [followingId], references: [id])
+  followingId String
+  createdAt   DateTime @default(now())
+
+  @@id([followerId, followingId])
+}
+
+// 게시글
+model Post {
+  id          String    @id @default(cuid())
+  content     String
+  style       String    // 말투 스타일
+  imageUrl    String?
+  isPrivate   Boolean   @default(false)
+  allowAI     Boolean   @default(true)
+  allowComments Boolean @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // 관계 설정
+  author      User      @relation(fields: [authorId], references: [id])
+  authorId    String
+  comments    Comment[]
+  likes       Like[]
+
+  @@index([createdAt, isPrivate])
+}
+
+// 그림
+model Drawing {
+  id          String      @id @default(cuid())
+  imageUrl    String
+  description String?
+  score       Float?
+  status      String      @default("PENDING")  // PENDING, EVALUATED
+  authorId    String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // 관계 설정
+  author      User        @relation(fields: [authorId], references: [id])
+  likes       Like[]
+  comments    Comment[] @relation("DrawingComments")
+  aiAnalysis  AIAnalysis?
+  evaluations AIEvaluation[]
+}
+
+// AI 분석
+model AIAnalysis {
+  id          String   @id @default(cuid())
+  content     String   @db.Text
+  createdAt   DateTime @default(now())
+  drawingId   String   @unique
+  drawing     Drawing  @relation(fields: [drawingId], references: [id], onDelete: Cascade)
+}
+
+// AI 평가
+model AIEvaluation {
+  id          String   @id @default(cuid())
+  score       Float
+  comment     String   @db.Text
+  botId       String
+  createdAt   DateTime @default(now())
+  drawingId   String
+  
+  // 관계 설정
+  drawing     Drawing  @relation(fields: [drawingId], references: [id], onDelete: Cascade)
+  bot         AIBot    @relation(fields: [botId], references: [id])
+}
+
+// 댓글
+model Comment {
+  id          String    @id @default(cuid())
+  content     String
+  isAI        Boolean   @default(false)
+  aiType      String?   // AI 봇 유형
+  isAIComment Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  // User 관계
+  author      User      @relation("UserComments", fields: [authorId], references: [id])
+  authorId    String
+  
+  // Post 관계
+  post        Post?     @relation(fields: [postId], references: [id])
+  postId      String?
+  
+  // Drawing 관계
+  drawing     Drawing?  @relation("DrawingComments", fields: [drawingId], references: [id])
+  drawingId   String?
+  
+  // 대댓글 관계
+  parent      Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  parentId    String?
+  replies     Comment[] @relation("CommentReplies")
+}
+
+// 좋아요
+model Like {
+  id        String    @id @default(cuid())
+  createdAt DateTime  @default(now())
+  
+  // 관계 설정
+  user      User      @relation(fields: [userId], references: [id])
+  userId    String
+  post      Post?     @relation(fields: [postId], references: [id])
+  postId    String?
+  drawing   Drawing?  @relation(fields: [drawingId], references: [id])
+  drawingId String?
+
+  @@unique([userId, postId, drawingId])
+}
+
+// AI 봇
+model AIBot {
+  id          String   @id
+  name        String
+  avatar      String
+  description String
+
+  // 관계 설정
+  evaluations AIEvaluation[]
+}
+
+model DailyMission {
+  id            String   @id @default(cuid())
+  userId        String
+  date          DateTime @default(now()) @db.Date
+  postCompleted Boolean  @default(false)
+  drawCompleted Boolean  @default(false)
+  commentCount  Int      @default(0)
+  commentCompleted Boolean  @default(false)
+  bonusCompleted Boolean  @default(false)
+  
+  user          User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, date])
+}
+
+model UserAchievement {
+  id            String   @id @default(cuid())
+  userId        String
+  achievementId String
+  achievedAt    DateTime @default(now())
+  user          User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, achievementId])
+  @@index([userId])
+}
+
+// 알림
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // COMMENT, AI_EVALUATION, ACHIEVEMENT, DAILY_MISSION, LEVEL_UP
+  title     String
+  content   String
+  isRead    Boolean  @default(false)
+  link      String?  // 클릭 시 이동할 링크
+  createdAt DateTime @default(now())
+
+  // 관계 설정
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([userId, isRead])
+}
