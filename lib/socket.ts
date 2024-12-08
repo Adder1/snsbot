@@ -1,4 +1,9 @@
 import { io, Socket } from 'socket.io-client';
+import { Server as SocketIOServer } from 'socket.io';
+
+declare global {
+  var io: SocketIOServer | undefined;
+}
 
 let socket: Socket | null = null;
 let reconnectAttempts = 0;
@@ -53,4 +58,8 @@ export const disconnectSocket = () => {
     socket = null;
     reconnectAttempts = 0;
   }
-}; 
+};
+
+export function getIO() {
+  return global.io;
+} 

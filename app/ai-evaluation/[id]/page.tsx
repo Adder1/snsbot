@@ -63,6 +63,7 @@ export default async function AIEvaluationPage({
   params,
 }: {
   params: { id: string };
+  searchParams?: { [key: string]: string | string[] | undefined };
 }) {
   try {
     const drawing = await getDrawing(params.id);
@@ -76,7 +77,7 @@ export default async function AIEvaluationPage({
     const analysis = await getOrCreateAnalysis(drawing);
     
     // AI 평가 점수 데이터 준비
-    const scores = drawing.evaluations.map(evaluation => {
+    const scores = drawing.evaluations.map((evaluation: any) => {
       return {
         botName: evaluation.bot.name,
         score: evaluation.score,
@@ -170,7 +171,7 @@ export default async function AIEvaluationPage({
 
           {/* AI 봇들의 평가 코멘트 */}
           <div className="space-y-4">
-            {drawing.evaluations.map((evaluation) => (
+            {drawing.evaluations.map((evaluation: any) => (
               <div key={evaluation.id} className="bg-[#2B2D31] rounded-lg p-4">
                 <div className="flex space-x-4">
                   {/* 봇 프로필 이미지 */}

@@ -1,23 +1,34 @@
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(req: Request) {
-  const stream = new TransformStream();
-  const writer = stream.writable.getWriter();
+  const responseStream = new TransformStream();
+  const writer = responseStream.writable.getWriter();
   const encoder = new TextEncoder();
 
-  // SSE 헤더 설정
-  const response = new NextResponse(stream.readable, {
+  const response = new NextResponse(responseStream.readable, {
     headers: {
       'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
+      'Cache-Control': 'no-cache, no-transform',
       'Connection': 'keep-alive',
     },
   });
 
-  // 클라이언트에 알림 보내기
-  const sendNotification = async (data: any) => {
-    await writer.write(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
-  };
+  // 연결이 끊어졌을 때 정리
+  req.signal.addEventListener('abort', () => {
+    writer.close();
+  });
+
+  // 주기적으로 핑 보내기
+  const pingInterval = setInterval(async () => {
+    try {
+      await writer.write(encoder.encode('event: ping\ndata: ping\n\n'));
+    } catch (error) {
+      clearInterval(pingInterval);
+      writer.close();
+    }
+  }, 30000);
 
   return response;
 } 

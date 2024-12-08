@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { Comment } from "@prisma/client";
 import AIComment from "./AIComment";
 import UserComment from "./UserComment";
 
@@ -7,9 +6,16 @@ interface CommentListProps {
   postId: string;
 }
 
-interface CommentWithAuthor extends Comment {
+interface CommentWithAuthor {
+  id: string;
+  content: string;
+  createdAt: Date;
+  isAIComment: boolean;
+  authorId: string;
   author: {
+    id: string;
     name: string;
+    nickname?: string;
     image: string;
   };
 }
@@ -64,9 +70,17 @@ export default function CommentList({ postId }: CommentListProps) {
             />
           ) : (
             <UserComment
-              author={comment.author}
-              content={comment.content}
-              createdAt={comment.createdAt}
+              comment={{
+                id: comment.id,
+                content: comment.content,
+                createdAt: comment.createdAt.toString(),
+                author: comment.author,
+                replies: []
+              }}
+              onReply={(parentId: string) => {
+                // 답글 처리 로직 구현
+                console.log('Reply to:', parentId);
+              }}
             />
           )}
         </div>

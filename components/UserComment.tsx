@@ -11,7 +11,7 @@ interface CommentProps {
     author: {
       id: string;
       name: string;
-      nickname: string;
+      nickname?: string;
       image: string;
     };
     replies?: CommentProps['comment'][];
@@ -122,3 +122,6 @@ function ReplyInput({ parentId, onReply, onCancel }: {
     </div>
   );
 }
+
+// default export 추가
+export default UserComment;

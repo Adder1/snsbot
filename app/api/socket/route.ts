@@ -55,8 +55,4 @@ export async function GET(req: Request) {
   }
 }
 
-export function notifyUser(userId: string, notification: any) {
-  if (global.io) {
-    global.io.to(`user-${userId}`).emit('notification', notification);
-  }
-} 
+export const dynamic = 'force-dynamic' 

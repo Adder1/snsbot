@@ -21,7 +21,7 @@ export async function GET() {
     // 전체 업적 목록에 달성 여부 추가
     const achievements = ACHIEVEMENTS.map(achievement => ({
       ...achievement,
-      achievedAt: userAchievements.find(ua => ua.achievementId === achievement.id)?.achievedAt || null
+      achievedAt: userAchievements.find((ua: any) => ua.achievementId === achievement.id)?.achievedAt || null
     }));
 
     return NextResponse.json({ achievements });
@@ -32,4 +32,6 @@ export async function GET() {
       { status: 500 }
     );
   }
-} 
+}
+
+export const dynamic = 'force-dynamic' 

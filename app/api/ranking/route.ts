@@ -69,14 +69,14 @@ export async function GET(request: Request) {
     ]);
 
     return NextResponse.json({
-      users: users.map((user, index) => ({
+      users: users.map((user: any, index: number) => ({
         ...user,
         rank: skip + index + 1,
         _count: {
           ...user._count,
           // 게시물과 그림의 좋아요 수를 합산
-          receivedLikes: user.posts.reduce((sum, post) => sum + post._count.likes, 0) +
-                        user.drawings.reduce((sum, drawing) => sum + drawing._count.likes, 0)
+          receivedLikes: user.posts.reduce((sum: number, post: any) => sum + post._count.likes, 0) +
+                        user.drawings.reduce((sum: number, drawing: any) => sum + drawing._count.likes, 0)
         }
       })),
       pagination: {
@@ -92,4 +92,6 @@ export async function GET(request: Request) {
       { status: 500 }
     );
   }
-} 
+}
+
+export const dynamic = 'force-dynamic' 

@@ -160,7 +160,7 @@ export async function checkDailyMissionAchievements(userId: string) {
   // 연속 5일 체크
   if (missions.length >= 5) {
     const lastFiveDays = missions.slice(0, 5);
-    const isStreak = lastFiveDays.every((mission, index, array) => {
+    const isStreak = lastFiveDays.every((mission: any, index: number, array: any[]) => {
       if (index === 0) return true;
       const prevDate = new Date(array[index - 1].date);
       const currentDate = new Date(mission.date);
