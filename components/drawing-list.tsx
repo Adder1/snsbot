@@ -68,7 +68,7 @@ export function DrawingList({ userId, type }: DrawingListProps) {
         throw new Error(`Failed to fetch drawings: ${errorText}`);
       }
       const data = await response.json();
-      setDrawings(data);
+      setDrawings(data.drawings || []);
     } catch (error) {
       console.error("Error fetching drawings:", error);
       setDrawings([]);

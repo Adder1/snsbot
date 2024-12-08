@@ -108,7 +108,7 @@ export async function POST(request: Request) {
     // AI 봇 평가 생성
     const bots = await prisma.aIBot.findMany();
     const botEvaluations = await Promise.all(
-      bots.map(async (bot) => {
+      bots.map(async (bot: any) => {
         const evaluation = await evaluateDrawing(imageData, bot.id);
         console.log(`Bot ${bot.id} evaluation:`, evaluation); // 디버깅을 위한 로그 추가
         return {
@@ -189,8 +189,8 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
-    const cursor = searchParams.get('cursor');  // 커서 추가
-    const limit = 10;  // 한 번에 가져올 개수
+    const cursor = searchParams.get('cursor');
+    const limit = 10;
     const session = await getServerSession(authOptions);
     const currentUserId = session?.user?.id;
 
@@ -216,39 +216,38 @@ export async function GET(request: Request) {
         cursor: {
           id: cursor
         },
-        skip: 1  // 현재 커서는 제외
+        skip: 1
       })
     });
 
-    const nextCursor = drawings.length === limit ? drawings[drawings.length - 1].id : undefined;
+    const formattedDrawings = drawings.map((drawing: any) => ({
+      id: drawing.id,
+      title: drawing.title || '',
+      description: drawing.description || '',
+      image: drawing.imageUrl,
+      createdAt: drawing.createdAt.toISOString(),
+      author: {
+        id: drawing.author.id,
+        name: drawing.author.name || '사용자',
+        nickname: drawing.author.nickname || '',
+        image: drawing.author.image || '/avatars/default.png',
+        badge: 'AI',
+      },
+      likeCount: drawing.likes.length,
+      comments: drawing.comments.length,
+      isLiked: currentUserId ? drawing.likes.some((like: any) => like.userId === currentUserId) : false,
+      score: drawing.score || 0,
+      aiScores: drawing.evaluations.map((evaluation: any) => ({
+        avatar: AI_BOTS.find(bot => bot.id === evaluation.botId)?.avatar || '',
+        score: evaluation.score,
+      })),
+    }));
 
     return NextResponse.json({
-      drawings: drawings.map(drawing => ({
-        id: drawing.id,
-        author: {
-          id: drawing.author.id,
-          name: drawing.author.name || '사용자',
-          image: drawing.author.image || '/avatars/default.png',
-          badge: 'AI',
-        },
-        image: drawing.imageUrl,
-        title: '',
-        description: drawing.description || '',
-        likes: drawing.likes.length,
-        likeCount: drawing.likes.length,
-        isLiked: currentUserId ? drawing.likes.some(like => like.userId === currentUserId) : false,
-        comments: drawing.comments.length,
-        createdAt: drawing.createdAt.toISOString(),
-        aiScores: drawing.evaluations.map(evaluation => ({
-          botId: evaluation.botId,
-          avatar: AI_BOTS.find(bot => bot.id === evaluation.botId)?.avatar || '',
-          score: evaluation.score,
-          comment: evaluation.comment,
-        })),
-        score: drawing.score || 0,
-      })),
-      nextCursor
+      drawings: formattedDrawings,
+      nextCursor: drawings.length === limit ? drawings[drawings.length - 1].id : undefined
     });
+
   } catch (error) {
     console.error('Error in GET /api/drawings:', error);
     return NextResponse.json(
@@ -257,3 +256,5 @@ export async function GET(request: Request) {
     );
   }
 }
+
+export const dynamic = 'force-dynamic'
